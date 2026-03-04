@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五子棋 · Gomoku</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Cinzel:wght@400;700&display=swap');
+
+  :root { --gold:#d4a017; --bg:#1a0f08; --panel-bg:rgba(20,12,5,0.93); }
+  * { box-sizing:border-box; margin:0; padding:0; }
+
+  body {
+    background:var(--bg); min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:'Noto Serif SC',serif; overflow-x:hidden;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse at 20% 20%,rgba(180,100,20,.13) 0%,transparent 60%),
+      radial-gradient(ellipse at 80% 80%,rgba(120,60,10,.18) 0%,transparent 60%),
+      repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(255,255,255,.008) 2px,rgba(255,255,255,.008) 4px);
+    pointer-events:none; z-index:0;
+  }
+
+  .game-wrapper {
+    position:relative; z-index:1;
+    display:flex; gap:28px; align-items:flex-start; padding:20px; max-width:100vw;
+  }
+
+  /* Panel */
+  .side-panel {
+    width:204px; background:var(--panel-bg);
+    border:1px solid rgba(212,160,23,.28); border-radius:4px; padding:20px 16px;
+    display:flex; flex-direction:column; gap:16px;
+    box-shadow:0 0 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(212,160,23,.18);
+  }
+  .title-block { text-align:center; }
+  .title-zh { font-size:28px; font-weight:900; letter-spacing:6px; color:var(--gold); text-shadow:0 0 20px rgba(212,160,23,.45); line-height:1; }
+  .title-en { font-family:'Cinzel',serif; font-size:10px; letter-spacing:4px; color:rgba(212,160,23,.45); margin-top:4px; }
+  .title-divider { width:60px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:8px auto 0; }
+
+  .section-label { font-size:10px; letter-spacing:3px; color:rgba(212,160,23,.55); text-transform:uppercase; margin-bottom:7px; }
+
+  .diff-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .diff-btn {
+    padding:7px 4px; background:rgba(255,255,255,.04);
+    border:1px solid rgba(212,160,23,.18); border-radius:3px;
+    color:rgba(212,160,23,.65); font-family:'Noto Serif SC',serif; font-size:12px;
+    cursor:pointer; transition:all .18s; text-align:center;
+  }
+  .diff-btn:hover { background:rgba(212,160,23,.1); color:var(--gold); }
+  .diff-btn.active { background:rgba(212,160,23,.18); border-color:var(--gold); color:var(--gold); box-shadow:0 0 8px rgba(212,160,23,.25); }
+
+  .color-choice { display:flex; gap:8px; }
+  .color-btn {
+    flex:1; padding:9px 6px; border-radius:3px; cursor:pointer;
+    font-family:'Noto Serif SC',serif; font-weight:700;
+    border:1px solid rgba(212,160,23,.18); transition:all .18s;
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:rgba(255,255,255,.04); color:rgba(200,200,200,.75);
+  }
+  .color-btn .stone-preview { width:22px; height:22px; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.5); }
+  .black-btn .stone-preview { background:radial-gradient(circle at 35% 35%,#555,#111); border:1px solid #444; }
+  .white-btn .stone-preview { background:radial-gradient(circle at 35% 35%,#fff,#ccc); border:1px solid #aaa; }
+  .color-btn:hover { border-color:rgba(212,160,23,.5); }
+  .color-btn.active { border-color:var(--gold); background:rgba(212,160,23,.11); box-shadow:0 0 10px rgba(212,160,23,.25); }
+  .color-btn .label { font-size:11px; letter-spacing:1px; }
+  .color-btn .sublabel { font-size:9px; opacity:.45; letter-spacing:1px; }
+
+  .status-box {
+    background:rgba(0,0,0,.38); border:1px solid rgba(212,160,23,.13);
+    border-radius:3px; padding:12px; text-align:center; min-height:62px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  }
+  .status-turn { font-size:14px; color:rgba(212,160,23,.88); letter-spacing:2px; }
+  .status-sub { font-size:11px; color:rgba(255,255,255,.38); letter-spacing:1px; }
+  .status-win { font-size:18px; font-weight:900; letter-spacing:3px; color:var(--gold); text-shadow:0 0 15px rgba(212,160,23,.6); }
+  .thinking-dot::after { content:''; animation:dots 1.2s steps(3,end) infinite; }
+  @keyframes dots { 0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'} }
+
+  .score-row { display:flex; justify-content:space-between; align-items:center; }
+  .score-item { text-align:center; flex:1; }
+  .score-label { font-size:10px; color:rgba(255,255,255,.32); letter-spacing:2px; margin-bottom:3px; }
+  .score-val { font-size:22px; font-weight:700; color:var(--gold); }
+  .score-sep { color:rgba(212,160,23,.28); font-size:18px; }
+
+  .action-btn {
+    width:100%; padding:11px;
+    background:linear-gradient(135deg,rgba(212,160,23,.14),rgba(212,160,23,.05));
+    border:1px solid rgba(212,160,23,.38); border-radius:3px; cursor:pointer;
+    color:var(--gold); font-family:'Noto Serif SC',serif; font-size:14px; letter-spacing:4px; transition:all .18s;
+  }
+  .action-btn:hover { background:linear-gradient(135deg,rgba(212,160,23,.28),rgba(212,160,23,.12)); box-shadow:0 0 14px rgba(212,160,23,.18); }
+  .action-btn:active { transform:scale(.98); }
+  .action-btn:disabled { opacity:.28; cursor:not-allowed; box-shadow:none; transform:none; }
+
+  .undo-btn {
+    background:linear-gradient(135deg,rgba(180,120,20,.08),rgba(180,120,20,.03));
+    border-color:rgba(212,160,23,.22); color:rgba(212,160,23,.68);
+    font-size:13px; letter-spacing:3px;
+  }
+  .undo-btn:not(:disabled):hover { background:linear-gradient(135deg,rgba(212,160,23,.18),rgba(212,160,23,.07)); color:var(--gold); }
+
+  .mute-btn {
+    width:100%; padding:8px; background:rgba(255,255,255,.025);
+    border:1px solid rgba(212,160,23,.15); border-radius:3px; cursor:pointer;
+    color:rgba(212,160,23,.48); font-family:'Noto Serif SC',serif;
+    font-size:11px; letter-spacing:3px; transition:all .18s;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .mute-btn:hover { border-color:rgba(212,160,23,.35); color:var(--gold); }
+  .mute-btn.muted { color:rgba(255,255,255,.2); border-color:rgba(255,255,255,.07); }
+
+  /* Board */
+  .board-container { display:flex; align-items:center; justify-content:center; }
+  .board-frame {
+    background:linear-gradient(145deg,#c8922a,#a07020,#c8922a);
+    padding:24px; border-radius:4px; position:relative;
+    box-shadow:0 0 0 2px rgba(212,160,23,.38),0 0 60px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,200,80,.28),inset 0 -1px 0 rgba(0,0,0,.28);
+  }
+  .board-frame::before {
+    content:''; position:absolute; inset:6px;
+    background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.025) 3px,rgba(0,0,0,.025) 4px),
+               repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.025) 3px,rgba(0,0,0,.025) 4px);
+    border-radius:2px; pointer-events:none;
+  }
+  canvas#board { display:block; cursor:pointer; image-rendering:crisp-edges; }
+  canvas#board.ai-thinking { cursor:wait; }
+
+  @keyframes boardWin {
+    0%,100%{ box-shadow:0 0 0 2px rgba(212,160,23,.38),0 0 60px rgba(0,0,0,.8); }
+    50%{ box-shadow:0 0 0 3px rgba(212,160,23,.9),0 0 80px rgba(212,160,23,.38); }
+  }
+  .board-frame.win-flash { animation:boardWin .5s ease-in-out 4; }
+
+  @keyframes undoPop { 0%{opacity:.75;transform:scale(1.2)} 100%{opacity:0;transform:scale(.5)} }
+  .undo-ghost { position:absolute; border-radius:50%; animation:undoPop .32s ease-out forwards; pointer-events:none; }
+
+  @media(max-width:700px){
+    .game-wrapper{flex-direction:column;align-items:center;gap:14px;padding:10px;}
+    .side-panel{width:100%;max-width:400px;flex-direction:row;flex-wrap:wrap;gap:10px;}
+    .title-block{width:100%;}
+    .diff-section,.color-section,.status-section,.score-section,.action-section{flex:1;min-width:140px;}
+  }
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <div class="side-panel">
+    <div class="title-block">
+      <div class="title-zh">五子棋</div>
+      <div class="title-en">GOMOKU</div>
+      <div class="title-divider"></div>
+    </div>
+    <div class="diff-section">
+      <div class="section-label">难度</div>
+      <div class="diff-grid">
+        <button class="diff-btn active" data-diff="1">简单</button>
+        <button class="diff-btn" data-diff="2">普通</button>
+        <button class="diff-btn" data-diff="3">困难</button>
+        <button class="diff-btn" data-diff="4">大师</button>
+      </div>
+    </div>
+    <div class="color-section">
+      <div class="section-label">执子</div>
+      <div class="color-choice">
+        <button class="color-btn black-btn active" data-color="black">
+          <div class="stone-preview"></div>
+          <div class="label">黑棋</div><div class="sublabel">先行</div>
+        </button>
+        <button class="color-btn white-btn" data-color="white">
+          <div class="stone-preview"></div>
+          <div class="label">白棋</div><div class="sublabel">后行</div>
+        </button>
+      </div>
+    </div>
+    <div class="status-section">
+      <div class="section-label">状态</div>
+      <div class="status-box" id="statusBox">
+        <div class="status-turn" id="statusTurn">黑棋落子</div>
+        <div class="status-sub" id="statusSub">你的回合</div>
+      </div>
+    </div>
+    <div class="score-section">
+      <div class="section-label">战绩</div>
+      <div class="score-row">
+        <div class="score-item"><div class="score-label">胜</div><div class="score-val" id="scoreWin">0</div></div>
+        <div class="score-sep">·</div>
+        <div class="score-item"><div class="score-label">平</div><div class="score-val" id="scoreDraw">0</div></div>
+        <div class="score-sep">·</div>
+        <div class="score-item"><div class="score-label">负</div><div class="score-val" id="scoreLose">0</div></div>
+      </div>
+    </div>
+    <div class="action-section" style="display:flex;flex-direction:column;gap:6px">
+      <button class="action-btn" id="restartBtn">重新开始</button>
+      <button class="action-btn undo-btn" id="undoBtn" disabled>↩ 悔棋</button>
+      <button class="mute-btn" id="muteBtn"><span id="muteIcon">🔊</span><span id="muteLabel">音效开启</span></button>
+    </div>
+  </div>
+
+  <div class="board-container">
+    <div class="board-frame" id="boardFrame">
+      <canvas id="board"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// AUDIO — pure Web Audio synthesis
+// ══════════════════════════════════════════════
+let _ac = null, muted = false;
+function AC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
+function dest(node) { node.connect(AC().destination); return node; }
+
+// Pink-noise buffer source (cached per duration bucket)
+const _noiseBufs = {};
+function pinkNoiseSrc(dur) {
+  const key = dur.toFixed(3);
+  if (!_noiseBufs[key]) {
+    const ac = AC(), len = Math.ceil(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0;
+    for (let i=0;i<len;i++){
+      const w=Math.random()*2-1;
+      b0=.99886*b0+w*.0555179; b1=.99332*b1+w*.0750759;
+      b2=.96900*b2+w*.1538520; b3=.86650*b3+w*.3104856;
+      b4=.55000*b4+w*.5329522; b5=-.7616*b5-w*.0168980;
+      d[i]=(b0+b1+b2+b3+b4+b5+w*.5362)*0.1;
+    }
+    _noiseBufs[key] = buf;
+  }
+  const src = AC().createBufferSource();
+  src.buffer = _noiseBufs[key];
+  return src;
+}
+
+// ── Stone clack: woody thud with transient ──
+function sfxStone(isBlack) {
+  if (muted) return;
+  const ac = AC(), t = ac.currentTime + 0.008;
+
+  // 1. Sharp transient crack (very short noise burst)
+  {
+    const src = pinkNoiseSrc(0.05);
+    const hp = ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
+    const bp = ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=isBlack?2800:3800; bp.Q.value=1.5;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(isBlack?.55:.42, t+.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+.04);
+    src.connect(hp); hp.connect(bp); bp.connect(g); dest(g);
+    src.start(t); src.stop(t+.05);
+  }
+  // 2. Mid wood body resonance
+  {
+    const src = pinkNoiseSrc(0.1);
+    const bp = ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=isBlack?320:500; bp.Q.value=2.2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(isBlack?.7:.55, t+.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+.085);
+    src.connect(bp); bp.connect(g); dest(g);
+    src.start(t); src.stop(t+.1);
+  }
+  // 3. Low pitch thump
+  {
+    const o = ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(isBlack?95:145, t);
+    o.frequency.exponentialRampToValueAtTime(isBlack?42:65, t+.09);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(isBlack?.42:.32, t+.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+.1);
+    o.connect(g); dest(g); o.start(t); o.stop(t+.12);
+  }
+}
+
+// ── Undo: soft reversed scrape ──
+function sfxUndo() {
+  if (muted) return;
+  const ac = AC(), t = ac.currentTime + 0.01;
+  // Rising noise sweep
+  {
+    const src = pinkNoiseSrc(0.12);
+    const bp = ac.createBiquadFilter(); bp.type='bandpass';
+    bp.frequency.setValueAtTime(600, t);
+    bp.frequency.linearRampToValueAtTime(2200, t+.12);
+    bp.Q.value = 2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(.22, t+.02);
+    g.gain.linearRampToValueAtTime(0.0001, t+.12);
+    src.connect(bp); bp.connect(g); dest(g);
+    src.start(t); src.stop(t+.13);
+  }
+  // Rising pitch glide
+  {
+    const o = ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(70, t);
+    o.frequency.exponentialRampToValueAtTime(260, t+.12);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(.15, t+.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+.13);
+    o.connect(g); dest(g); o.start(t); o.stop(t+.14);
+  }
+}
+
+// ── Hover: ultra-dry tick (barely audible) ──
+function sfxHover() {
+  if (muted) return;
+  const ac = AC(), t = ac.currentTime;
+  const src = pinkNoiseSrc(0.015);
+  const bp = ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=4000; bp.Q.value=3;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(.055, t+.001);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+.014);
+  src.connect(bp); bp.connect(g); dest(g);
+  src.start(t); src.stop(t+.016);
+}
+
+// ── Game start: two gentle bell tones ──
+function sfxStart() {
+  if (muted) return;
+  const ac = AC();
+  [[523.25, .05], [659.26, .18]].forEach(([f, dt]) => {
+    const t = ac.currentTime + dt;
+    [1, 2.0, 2.756].forEach((mult, i) => {
+      const o = ac.createOscillator(); o.type = i===0?'triangle':'sine'; o.frequency.value = f*mult;
+      const g = ac.createGain(); const vol = [.18, .07, .04][i];
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+.007);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+[.7,.5,.4][i]);
+      o.connect(g); dest(g); o.start(t); o.stop(t+.8);
+    });
+  });
+}
+
+// ── Win: bright pentatonic bell cascade + warm chord ──
+function sfxWin() {
+  if (muted) return;
+  const ac = AC();
+  const notes = [523.25, 587.33, 659.26, 783.99, 880.00, 1046.5];
+  notes.forEach((f, i) => {
+    const t = ac.currentTime + .05 + i*.1;
+    [1, 2.0, 2.756].forEach((mult, j) => {
+      const o = ac.createOscillator(); o.type=j===0?'triangle':'sine'; o.frequency.value=f*mult;
+      const vol = [.2,.06,.03][j];
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+[1.1,.75,.6][j]);
+      o.connect(g); dest(g); o.start(t); o.stop(t+1.2);
+    });
+  });
+  // Resolution chord
+  setTimeout(() => {
+    if (muted) return;
+    const t = AC().currentTime + .02;
+    [261.63, 329.63, 392.00].forEach(f => {
+      const o = AC().createOscillator(); o.type='sine'; o.frequency.value=f;
+      const g = AC().createGain();
+      g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(.09,t+.07);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+1.3);
+      o.connect(g); dest(g); o.start(t); o.stop(t+1.4);
+    });
+  }, 650);
+}
+
+// ── Lose: slow minor descent with vibrato + drone ──
+function sfxLose() {
+  if (muted) return;
+  const ac = AC();
+  [[440,.05],[369.99,.27],[293.66,.49],[220,.73]].forEach(([f,dt]) => {
+    const t = ac.currentTime + dt;
+    const o = ac.createOscillator(); o.type='sine'; o.frequency.value=f;
+    // subtle vibrato
+    const lfo=ac.createOscillator(); lfo.frequency.value=4;
+    const lfoG=ac.createGain(); lfoG.gain.value=4;
+    lfo.connect(lfoG); lfoG.connect(o.frequency);
+    const g=ac.createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(.14,t+.04);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+.55);
+    o.connect(g); dest(g);
+    o.start(t); o.stop(t+.6); lfo.start(t); lfo.stop(t+.6);
+  });
+  // fading drone
+  setTimeout(()=>{
+    if(muted)return;
+    const t=AC().currentTime+.02;
+    const o=AC().createOscillator(); o.type='sine'; o.frequency.value=110;
+    const g=AC().createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(.1,t+.15);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+1.6);
+    o.connect(g); dest(g); o.start(t); o.stop(t+1.8);
+  }, 700);
+}
+
+// ── Draw: suspended chord ──
+function sfxDraw() {
+  if (muted) return;
+  const ac = AC();
+  [330, 392, 466.16].forEach((f,i) => {
+    const t = ac.currentTime + .05 + i*.09;
+    const o = ac.createOscillator(); o.type='triangle'; o.frequency.value=f;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(.1,t+.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+1.0);
+    o.connect(g); dest(g); o.start(t); o.stop(t+1.1);
+  });
+}
+
+// ══════════════════════════════════════════════
+// BOARD CONFIG
+// ══════════════════════════════════════════════
+const SIZE=15, CELL=38, PAD=22, CANVAS_SIZE=PAD*2+CELL*(SIZE-1);
+const canvas=document.getElementById('board'), ctx=canvas.getContext('2d');
+canvas.width=canvas.height=CANVAS_SIZE;
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let board=[], moveHistory=[], currentTurn, playerColor=1, aiColor=2;
+let gameOver=false, difficulty=1, scores={win:0,draw:0,lose:0};
+let lastMove=null, winLine=[];
+
+function initBoard() {
+  board=Array.from({length:SIZE},()=>new Array(SIZE).fill(0));
+  moveHistory=[]; gameOver=false; currentTurn=1; lastMove=null; winLine=[];
+  document.getElementById('boardFrame').classList.remove('win-flash');
+  updateUndoBtn(); updateStatus(); drawBoard(); sfxStart();
+  if(playerColor===2) setTimeout(aiMove,350);
+}
+
+// ══════════════════════════════════════════════
+// UNDO
+// ══════════════════════════════════════════════
+function undoMove() {
+  if(moveHistory.length===0||gameOver) return;
+  // Remove last AI move + last player move (2 plies), or 1 if AI hasn't gone
+  const removeCount = (moveHistory.length>=2 && moveHistory[moveHistory.length-1].color===aiColor) ? 2 : 1;
+  for(let i=0;i<removeCount;i++) {
+    const mv=moveHistory.pop();
+    showUndoGhost(mv.r, mv.c, mv.color);
+    board[mv.r][mv.c]=0;
+  }
+  gameOver=false; winLine=[];
+  document.getElementById('boardFrame').classList.remove('win-flash');
+  if(moveHistory.length>0){
+    const last=moveHistory[moveHistory.length-1];
+    lastMove=[last.r,last.c]; currentTurn=3-last.color;
+  } else { lastMove=null; currentTurn=1; }
+  sfxUndo(); updateUndoBtn(); drawBoard(); updateStatus();
+}
+
+function showUndoGhost(r, c, color) {
+  const frame=document.getElementById('boardFrame');
+  const rad=CELL*0.435, fp=24; // frame padding
+  const x=PAD+c*CELL-rad+fp, y=PAD+r*CELL-rad+fp;
+  const g=document.createElement('div'); g.className='undo-ghost';
+  g.style.cssText=`left:${x}px;top:${y}px;width:${rad*2}px;height:${rad*2}px;background:${color===1?'rgba(25,25,25,.7)':'rgba(240,232,218,.7)'};`;
+  frame.appendChild(g); setTimeout(()=>g.remove(),380);
+}
+
+function updateUndoBtn() {
+  document.getElementById('undoBtn').disabled = moveHistory.length===0 || gameOver;
+}
+
+// ══════════════════════════════════════════════
+// DRAWING
+// ══════════════════════════════════════════════
+function drawBoard() {
+  ctx.clearRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+  // Wood
+  const gr=ctx.createLinearGradient(0,0,CANVAS_SIZE,CANVAS_SIZE);
+  gr.addColorStop(0,'#d4a030'); gr.addColorStop(.5,'#be8820'); gr.addColorStop(1,'#a86e10');
+  ctx.fillStyle=gr; ctx.fillRect(0,0,CANVAS_SIZE,CANVAS_SIZE);
+  // Grain
+  ctx.strokeStyle='rgba(0,0,0,.042)'; ctx.lineWidth=.8;
+  for(let i=-20;i<CANVAS_SIZE+20;i+=9){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+30,CANVAS_SIZE);ctx.stroke();}
+  // Grid
+  ctx.strokeStyle='rgba(52,22,0,.62)'; ctx.lineWidth=.72;
+  for(let i=0;i<SIZE;i++){
+    const x=PAD+i*CELL,y=PAD+i*CELL;
+    ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,PAD+(SIZE-1)*CELL);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(PAD+(SIZE-1)*CELL,y);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(42,18,0,.82)'; ctx.lineWidth=1.8;
+  ctx.strokeRect(PAD,PAD,(SIZE-1)*CELL,(SIZE-1)*CELL);
+  // Stars
+  ctx.fillStyle='rgba(48,20,0,.68)';
+  [[3,3],[3,11],[7,7],[11,3],[11,11]].forEach(([r,c])=>{ctx.beginPath();ctx.arc(PAD+c*CELL,PAD+r*CELL,3.2,0,Math.PI*2);ctx.fill();});
+  // Coords
+  ctx.font='9.5px serif'; ctx.fillStyle='rgba(52,22,0,.42)';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const L='ABCDEFGHJKLMNOP';
+  for(let i=0;i<SIZE;i++){
+    ctx.fillText(L[i],PAD+i*CELL,PAD/2); ctx.fillText(L[i],PAD+i*CELL,CANVAS_SIZE-PAD/2);
+    ctx.fillText(SIZE-i,PAD/2-1,PAD+i*CELL); ctx.fillText(SIZE-i,CANVAS_SIZE-PAD/2+1,PAD+i*CELL);
+  }
+  // Win line
+  if(winLine.length>=2){
+    const[r0,c0]=winLine[0],[r1,c1]=winLine[winLine.length-1];
+    ctx.save(); ctx.strokeStyle='rgba(255,45,45,.82)'; ctx.lineWidth=4.5; ctx.lineCap='round';
+    ctx.shadowColor='rgba(255,80,80,.45)'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.moveTo(PAD+c0*CELL,PAD+r0*CELL); ctx.lineTo(PAD+c1*CELL,PAD+r1*CELL); ctx.stroke();
+    ctx.restore();
+  }
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++)
+    if(board[r][c]) drawPiece(r,c,board[r][c],lastMove&&lastMove[0]===r&&lastMove[1]===c);
+}
+
+function drawPiece(r,c,color,isLast) {
+  const x=PAD+c*CELL, y=PAD+r*CELL, rad=CELL*.435;
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.52)'; ctx.shadowBlur=7; ctx.shadowOffsetX=2; ctx.shadowOffsetY=2.5;
+  if(color===1){
+    const g=ctx.createRadialGradient(x-rad*.32,y-rad*.32,rad*.04,x+rad*.1,y+rad*.1,rad);
+    g.addColorStop(0,'#5a5a5a'); g.addColorStop(.22,'#1e1e1e'); g.addColorStop(1,'#040404');
+    ctx.fillStyle=g;
+  } else {
+    const g=ctx.createRadialGradient(x-rad*.3,y-rad*.3,rad*.04,x+rad*.08,y+rad*.08,rad);
+    g.addColorStop(0,'#ffffff'); g.addColorStop(.5,'#eee6d6'); g.addColorStop(1,'#b8a898');
+    ctx.fillStyle=g;
+  }
+  ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fill(); ctx.restore();
+  // Specular rim
+  ctx.save(); ctx.strokeStyle=color===1?'rgba(255,255,255,.055)':'rgba(255,255,255,.52)'; ctx.lineWidth=.9;
+  ctx.beginPath(); ctx.arc(x-rad*.18,y-rad*.18,rad*.62,Math.PI*1.1,Math.PI*1.65); ctx.stroke(); ctx.restore();
+  // Last-move dot
+  if(isLast){ctx.save();ctx.fillStyle=color===1?'rgba(255,88,88,.85)':'rgba(208,55,55,.75)';ctx.beginPath();ctx.arc(x,y,rad*.22,0,Math.PI*2);ctx.fill();ctx.restore();}
+}
+
+// ══════════════════════════════════════════════
+// WIN CHECK
+// ══════════════════════════════════════════════
+const DIRS=[[0,1],[1,0],[1,1],[1,-1]];
+function checkWin(r,c,color){
+  for(const[dr,dc]of DIRS){
+    const line=[[r,c]];
+    for(let d=1;d<5;d++){const nr=r+dr*d,nc=c+dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||board[nr][nc]!==color)break;line.push([nr,nc]);}
+    for(let d=1;d<5;d++){const nr=r-dr*d,nc=c-dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||board[nr][nc]!==color)break;line.unshift([nr,nc]);}
+    if(line.length>=5){winLine=line.slice(0,5);return true;}
+  }
+  return false;
+}
+function checkWinFast(r,c,color){
+  for(const[dr,dc]of DIRS){let cnt=1;
+    for(let d=1;d<5;d++){const nr=r+dr*d,nc=c+dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||board[nr][nc]!==color)break;cnt++;}
+    for(let d=1;d<5;d++){const nr=r-dr*d,nc=c-dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||board[nr][nc]!==color)break;cnt++;}
+    if(cnt>=5)return true;}return false;
+}
+function isBoardFull(){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(!board[r][c])return false;return true;}
+
+// ══════════════════════════════════════════════
+// EVAL & AI
+// ══════════════════════════════════════════════
+const SC={FIVE:1000000,OPEN4:100000,CLOSE4:10000,OPEN3:5000,CLOSE3:500,OPEN2:200,CLOSE2:50,ONE:10};
+function evaluateLine(cells){
+  let s=0;
+  for(const color of[1,2]){const opp=3-color,mul=color===aiColor?1:-1;let i=0;
+    while(i<cells.length){if(cells[i]===opp){i++;continue;}let cnt=0,oL=(i===0||cells[i-1]===0)?1:0;
+      while(i<cells.length&&cells[i]===color){cnt++;i++;}const oR=(i<cells.length&&cells[i]===0)?1:0;
+      if(!cnt){i++;continue;}
+      if(cnt>=5)s+=mul*SC.FIVE;else if(cnt===4)s+=mul*(oL+oR===2?SC.OPEN4:oL+oR===1?SC.CLOSE4:0);
+      else if(cnt===3)s+=mul*(oL+oR===2?SC.OPEN3:oL+oR===1?SC.CLOSE3:0);
+      else if(cnt===2)s+=mul*(oL+oR===2?SC.OPEN2:oL+oR===1?SC.CLOSE2:0);else s+=mul*SC.ONE;}}
+  return s;
+}
+function evaluateBoard(){
+  let t=0;
+  for(let r=0;r<SIZE;r++)t+=evaluateLine(board[r].slice());
+  for(let c=0;c<SIZE;c++){const col=[];for(let r=0;r<SIZE;r++)col.push(board[r][c]);t+=evaluateLine(col);}
+  for(let s=0;s<2*SIZE-1;s++){const d=[];for(let r=0;r<SIZE;r++){const c=s-r;if(c>=0&&c<SIZE)d.push(board[r][c]);}t+=evaluateLine(d);}
+  for(let s=0;s<2*SIZE-1;s++){const d=[];for(let r=0;r<SIZE;r++){const c=r+s-(SIZE-1);if(c>=0&&c<SIZE)d.push(board[r][c]);}t+=evaluateLine(d);}
+  return t;
+}
+function getCandidates(range=2){
+  const vis=Array.from({length:SIZE},()=>new Array(SIZE).fill(false)),moves=[];let has=false;
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){if(!board[r][c])continue;has=true;
+    for(let dr=-range;dr<=range;dr++)for(let dc=-range;dc<=range;dc++){const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&!board[nr][nc]&&!vis[nr][nc]){vis[nr][nc]=true;moves.push([nr,nc]);}}}
+  return has?moves:[[7,7]];
+}
+function quickScore(r,c,color){
+  let s=0;
+  for(const[dr,dc]of DIRS){let cnt=1,open=0;
+    for(let d=1;d<5;d++){const nr=r+dr*d,nc=c+dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE)break;if(board[nr][nc]===color)cnt++;else{if(!board[nr][nc])open++;break;}}
+    for(let d=1;d<5;d++){const nr=r-dr*d,nc=c-dc*d;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE)break;if(board[nr][nc]===color)cnt++;else{if(!board[nr][nc])open++;break;}}
+    if(cnt>=5)s+=SC.FIVE;else if(cnt===4)s+=(open>=1?SC.OPEN4:SC.CLOSE4);
+    else if(cnt===3)s+=(open>=2?SC.OPEN3:SC.CLOSE3);else if(cnt===2)s+=(open>=1?SC.OPEN2:0);}
+  return s;
+}
+function minimax(depth,alpha,beta,isMax,lr,lc){
+  if(lr!==-1&&checkWinFast(lr,lc,isMax?playerColor:aiColor))return isMax?-SC.FIVE*(depth+1):SC.FIVE*(depth+1);
+  if(depth===0)return evaluateBoard();
+  const cands=getCandidates(2);if(!cands.length)return 0;
+  const color=isMax?aiColor:playerColor;
+  cands.sort((a,b)=>(quickScore(b[0],b[1],color)+quickScore(b[0],b[1],3-color))-(quickScore(a[0],a[1],color)+quickScore(a[0],a[1],3-color)));
+  const top=Math.min(cands.length,depth>=3?8:12);
+  if(isMax){let best=-Infinity;for(let i=0;i<top;i++){const[r,c]=cands[i];board[r][c]=aiColor;const v=minimax(depth-1,alpha,beta,false,r,c);board[r][c]=0;if(v>best)best=v;alpha=Math.max(alpha,best);if(beta<=alpha)break;}return best;}
+  else{let best=Infinity;for(let i=0;i<top;i++){const[r,c]=cands[i];board[r][c]=playerColor;const v=minimax(depth-1,alpha,beta,true,r,c);board[r][c]=0;if(v<best)best=v;beta=Math.min(beta,best);if(beta<=alpha)break;}return best;}
+}
+
+function aiMove(){
+  if(gameOver)return;
+  canvas.classList.add('ai-thinking'); setStatusThinking();
+  setTimeout(()=>{
+    let best=null;
+    if(difficulty===1){
+      const cands=getCandidates(1);if(!cands.length){canvas.classList.remove('ai-thinking');return;}
+      let bs=-Infinity;for(const[r,c]of cands){let s=quickScore(r,c,aiColor)*2+quickScore(r,c,playerColor)+Math.random()*3000;if(s>bs){bs=s;best=[r,c];}}
+    } else {
+      const depth=difficulty===2?2:difficulty===3?4:6;
+      const cands=getCandidates(2);
+      cands.sort((a,b)=>(quickScore(b[0],b[1],aiColor)+quickScore(b[0],b[1],playerColor))-(quickScore(a[0],a[1],aiColor)+quickScore(a[0],a[1],playerColor)));
+      for(const[r,c]of cands){board[r][c]=aiColor;if(checkWinFast(r,c,aiColor)){board[r][c]=0;best=[r,c];break;}board[r][c]=0;}
+      if(!best){for(const[r,c]of cands){board[r][c]=playerColor;if(checkWinFast(r,c,playerColor)){board[r][c]=0;best=[r,c];break;}board[r][c]=0;}}
+      if(!best){let bv=-Infinity;const topN=Math.min(cands.length,depth>=5?10:15);for(let i=0;i<topN;i++){const[r,c]=cands[i];board[r][c]=aiColor;const v=minimax(depth-1,-Infinity,Infinity,false,r,c);board[r][c]=0;if(v>bv){bv=v;best=[r,c];}}}
+    }
+    canvas.classList.remove('ai-thinking');
+    if(best)placeStone(best[0],best[1]);
+  }, difficulty>=4?50:20);
+}
+
+// ══════════════════════════════════════════════
+// PLACE STONE
+// ══════════════════════════════════════════════
+function placeStone(r,c){
+  if(gameOver||board[r][c])return;
+  board[r][c]=currentTurn; lastMove=[r,c];
+  moveHistory.push({r,c,color:currentTurn});
+  sfxStone(currentTurn===1);
+  if(checkWin(r,c,currentTurn)){
+    drawBoard();gameOver=true;updateUndoBtn();
+    if(currentTurn===playerColor){scores.win++;setStatusWin('你赢了！');sfxWin();}
+    else{scores.lose++;setStatusWin('AI赢了');sfxLose();}
+    updateScores();document.getElementById('boardFrame').classList.add('win-flash');return;
+  }
+  if(isBoardFull()){drawBoard();gameOver=true;scores.draw++;updateUndoBtn();updateScores();setStatusDraw();sfxDraw();return;}
+  currentTurn=3-currentTurn;updateUndoBtn();drawBoard();updateStatus();
+  if(currentTurn===aiColor)setTimeout(aiMove,100);
+}
+
+// ══════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════
+function updateStatus(){
+  const t=document.getElementById('statusTurn'),s=document.getElementById('statusSub');
+  t.className='status-turn'; t.textContent=currentTurn===1?'黑棋落子':'白棋落子';
+  s.textContent=currentTurn===playerColor?'你的回合':'AI思考中';
+}
+function setStatusThinking(){
+  document.getElementById('statusTurn').className='status-turn thinking-dot';
+  document.getElementById('statusTurn').textContent='AI思考中';
+  document.getElementById('statusSub').textContent=['简单','普通','困难','大师'][difficulty-1]+'难度';
+}
+function setStatusWin(msg){
+  document.getElementById('statusTurn').className='status-win';
+  document.getElementById('statusTurn').textContent=msg;
+  document.getElementById('statusSub').textContent='点击重新开始';
+}
+function setStatusDraw(){
+  const t=document.getElementById('statusTurn');
+  t.className='status-win';t.style.color='#aaa';t.textContent='平局';
+  document.getElementById('statusSub').textContent='点击重新开始';
+}
+function updateScores(){
+  document.getElementById('scoreWin').textContent=scores.win;
+  document.getElementById('scoreDraw').textContent=scores.draw;
+  document.getElementById('scoreLose').textContent=scores.lose;
+}
+
+// ══════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════
+canvas.addEventListener('click',e=>{
+  if(gameOver||currentTurn!==playerColor)return;
+  const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const c=Math.round(((e.clientX-rect.left)*sx-PAD)/CELL);
+  const r=Math.round(((e.clientY-rect.top)*sy-PAD)/CELL);
+  if(r>=0&&r<SIZE&&c>=0&&c<SIZE)placeStone(r,c);
+});
+
+let lastHoverCell=null;
+canvas.addEventListener('mousemove',e=>{
+  if(gameOver||currentTurn!==playerColor)return;
+  const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const c=Math.round(((e.clientX-rect.left)*sx-PAD)/CELL);
+  const r=Math.round(((e.clientY-rect.top)*sy-PAD)/CELL);
+  drawBoard();
+  if(r>=0&&r<SIZE&&c>=0&&c<SIZE&&!board[r][c]){
+    ctx.globalAlpha=.3;drawPiece(r,c,playerColor,false);ctx.globalAlpha=1;
+    const key=r*SIZE+c;if(key!==lastHoverCell){lastHoverCell=key;sfxHover();}
+  } else lastHoverCell=null;
+});
+canvas.addEventListener('mouseleave',()=>drawBoard());
+
+document.getElementById('restartBtn').addEventListener('click',initBoard);
+document.getElementById('undoBtn').addEventListener('click',()=>{if(!gameOver&&moveHistory.length>0)undoMove();});
+
+document.querySelectorAll('.diff-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); difficulty=parseInt(btn.dataset.diff); initBoard();
+}));
+document.querySelectorAll('.color-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); playerColor=btn.dataset.color==='black'?1:2; aiColor=3-playerColor; initBoard();
+}));
+document.getElementById('muteBtn').addEventListener('click',()=>{
+  muted=!muted;
+  document.getElementById('muteBtn').classList.toggle('muted',muted);
+  document.getElementById('muteIcon').textContent=muted?'🔇':'🔊';
+  document.getElementById('muteLabel').textContent=muted?'音效关闭':'音效开启';
+});
+
+// ── INIT ──
+initBoard();
+</script>
+</body>
+</html>
