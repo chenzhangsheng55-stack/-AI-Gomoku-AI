@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>清明 · Qingming Dreamscape</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --spring-green: #6dffb3;
+      --sakura-pink: #ff88ce;
+      --neon-blue: #63d7ff;
+      --sky-cyan: #9cecff;
+      --apricot: #ffd56a;
+      --ink: #0f172a;
+      --mist: rgba(255,255,255,0.08);
+      --glow: 0 0 12px rgba(99, 215, 255, 0.6), 0 0 24px rgba(255, 136, 206, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: #f8fbff;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at top, rgba(91, 243, 180, 0.22), transparent 35%),
+        radial-gradient(circle at 70% 20%, rgba(99, 215, 255, 0.22), transparent 28%),
+        linear-gradient(180deg, #07111f 0%, #102040 36%, #132b43 64%, #1f3b4d 100%);
+      font-family: "STKaiti", "KaiTi", "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,0.05), transparent 18%, transparent 82%, rgba(255,255,255,0.04)),
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.06), transparent 22%),
+        radial-gradient(circle at 80% 12%, rgba(255,214,106,0.08), transparent 22%);
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .content-layer {
+      position: relative;
+      z-index: 2;
+    }
+
+    .glow-text {
+      text-shadow:
+        0 0 8px rgba(255,255,255,0.65),
+        0 0 18px rgba(99,215,255,0.5),
+        0 0 34px rgba(255,136,206,0.35);
+    }
+
+    .hero-haze {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .hero-haze::before,
+    .hero-haze::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(22px);
+      opacity: 0.45;
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+
+    .hero-haze::before {
+      width: 22rem;
+      height: 22rem;
+      left: 8%;
+      top: 10%;
+      background: radial-gradient(circle, rgba(255,136,206,0.35), transparent 70%);
+    }
+
+    .hero-haze::after {
+      width: 30rem;
+      height: 30rem;
+      right: 6%;
+      top: 8%;
+      background: radial-gradient(circle, rgba(99,215,255,0.28), transparent 72%);
+      animation-duration: 20s;
+    }
+
+    @keyframes drift {
+      from { transform: translate3d(-12px, 0, 0) scale(1); }
+      to { transform: translate3d(18px, 18px, 0) scale(1.08); }
+    }
+
+    .fade-up {
+      opacity: 0;
+      transform: translateY(26px);
+      animation: fadeUp 1.2s ease forwards;
+    }
+
+    .delay-1 { animation-delay: 0.3s; }
+    .delay-2 { animation-delay: 0.6s; }
+    .delay-3 { animation-delay: 0.9s; }
+    .delay-4 { animation-delay: 1.2s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .poem-line {
+      display: inline-block;
+      opacity: 0;
+      animation: poemFade 7s ease-in-out infinite;
+    }
+
+    .poem-line:nth-child(1) { animation-delay: 0.2s; }
+    .poem-line:nth-child(2) { animation-delay: 1.3s; }
+    .poem-line:nth-child(3) { animation-delay: 2.4s; }
+    .poem-line:nth-child(4) { animation-delay: 3.5s; }
+
+    @keyframes poemFade {
+      0%, 12% { opacity: 0; transform: translateY(20px); }
+      18%, 36% { opacity: 1; transform: translateY(0); }
+      46%, 100% { opacity: 0.2; transform: translateY(-8px); }
+    }
+
+    .hero-kite {
+      width: min(92vw, 440px);
+      aspect-ratio: 1 / 1.15;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.18s ease-out;
+      filter: drop-shadow(0 0 24px rgba(99,215,255,0.35)) drop-shadow(0 0 36px rgba(255,136,206,0.28));
+    }
+
+    .kite-core {
+      position: absolute;
+      inset: 8% 15% auto;
+      height: 56%;
+      clip-path: polygon(50% 0%, 94% 42%, 50% 100%, 6% 42%);
+      background: linear-gradient(145deg, rgba(255,136,206,0.96), rgba(99,215,255,0.96));
+      border: 2px solid rgba(255,255,255,0.55);
+      box-shadow: inset 0 0 36px rgba(255,255,255,0.3), 0 0 36px rgba(99,215,255,0.28);
+      overflow: hidden;
+    }
+
+    .kite-core::before,
+    .kite-core::after {
+      content: "";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.85), transparent);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 8px rgba(255,255,255,0.85);
+    }
+
+    .kite-core::after {
+      width: 100%;
+      height: 2px;
+      inset: 50% auto auto 50%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+    }
+
+    .kite-girl,
+    .kite-branch,
+    .kite-tail {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .kite-girl {
+      inset: 29% 30% auto;
+      width: 40%;
+      height: 34%;
+    }
+
+    .girl-head {
+      position: absolute;
+      left: 37%;
+      top: 0;
+      width: 22%;
+      height: 22%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff7ef, #ffd8cc 70%);
+      box-shadow: 0 0 12px rgba(255,228,221,0.45);
+    }
+
+    .girl-hair {
+      position: absolute;
+      left: 31%;
+      top: 2%;
+      width: 34%;
+      height: 28%;
+      border-radius: 50% 50% 45% 45%;
+      background: linear-gradient(180deg, #213752, #0d1832);
+      transform: translateZ(8px);
+    }
+
+    .girl-body {
+      position: absolute;
+      left: 24%;
+      top: 20%;
+      width: 54%;
+      height: 52%;
+      border-radius: 45% 45% 38% 38%;
+      background: linear-gradient(180deg, rgba(105,255,185,0.95), rgba(255,214,106,0.92));
+      clip-path: polygon(50% 0%, 100% 18%, 82% 100%, 18% 100%, 0% 18%);
+      box-shadow: inset 0 0 20px rgba(255,255,255,0.28);
+    }
+
+    .girl-sleeve,
+    .girl-sleeve.right {
+      position: absolute;
+      top: 30%;
+      width: 24%;
+      height: 18%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #8affc6, #73d8ff);
+      transform-origin: center left;
+    }
+
+    .girl-sleeve { left: 9%; transform: rotate(30deg); }
+    .girl-sleeve.right { right: 9%; transform: rotate(-25deg); }
+
+    .kite-branch {
+      left: 52%;
+      top: 33%;
+      width: 28%;
+      height: 18%;
+      transform: rotate(-20deg);
+    }
+
+    .branch-stem {
+      position: absolute;
+      left: 10%;
+      top: 44%;
+      width: 76%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #846445, #b98e61);
+      box-shadow: 0 0 10px rgba(255,214,106,0.25);
+    }
+
+    .leaf {
+      position: absolute;
+      width: 18%;
+      height: 36%;
+      background: linear-gradient(180deg, #9dffcb, #54d48e);
+      border-radius: 100% 0 100% 0;
+      box-shadow: 0 0 12px rgba(109,255,179,0.45);
+      animation: swayLeaf 3s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    .leaf:nth-child(2) { left: 20%; top: 4%; }
+    .leaf:nth-child(3) { left: 39%; top: 18%; animation-delay: -1s; }
+    .leaf:nth-child(4) { left: 60%; top: 0%; animation-delay: -1.5s; }
+    .leaf:nth-child(5) { left: 70%; top: 22%; animation-delay: -0.8s; }
+
+    @keyframes swayLeaf {
+      0%,100% { transform: rotate(-12deg); }
+      50% { transform: rotate(10deg) translateY(2px); }
+    }
+
+    .kite-tail {
+      left: 50%;
+      top: 58%;
+      width: 2px;
+      height: 34%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), transparent);
+      box-shadow: 0 0 14px rgba(255,255,255,0.5);
+    }
+
+    .tail-bow {
+      position: absolute;
+      left: 50%;
+      width: 22px;
+      height: 14px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, rgba(255,136,206,0.92), rgba(255,214,106,0.96));
+      clip-path: polygon(0 50%, 40% 0, 55% 50%, 40% 100%);
+      filter: drop-shadow(0 0 8px rgba(255,136,206,0.45));
+    }
+
+    .tail-bow::after {
+      content: "";
+      position: absolute;
+      right: -12px;
+      top: 0;
+      width: 22px;
+      height: 14px;
+      background: linear-gradient(90deg, rgba(255,214,106,0.96), rgba(99,215,255,0.92));
+      clip-path: polygon(100% 50%, 60% 0, 45% 50%, 60% 100%);
+    }
+
+    .floating-card {
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      background: linear-gradient(145deg, rgba(10,20,42,0.62), rgba(26,53,85,0.42));
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 0 20px rgba(99,215,255,0.12), inset 0 0 18px rgba(255,255,255,0.06);
+      transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
+    .floating-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: rgba(255,214,106,0.5);
+      box-shadow: 0 0 24px rgba(99,215,255,0.35), 0 0 40px rgba(255,136,206,0.24), inset 0 0 22px rgba(255,255,255,0.1);
+    }
+
+    .floating-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.12) 40%, transparent 80%);
+      transform: translateX(-120%);
+      transition: transform 0.8s ease;
+    }
+
+    .floating-card:hover::after { transform: translateX(120%); }
+
+    .icon-orb {
+      width: 72px;
+      height: 72px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle, rgba(255,255,255,0.25), rgba(99,215,255,0.18));
+      box-shadow: inset 0 0 18px rgba(255,255,255,0.2), 0 0 22px rgba(99,215,255,0.18);
+      font-size: 1.9rem;
+    }
+
+    .scroll-strip {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(260px, 34vw);
+      gap: 1.25rem;
+      overflow-x: auto;
+      padding: 0.5rem 0 1rem;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: thin;
+    }
+
+    .scroll-strip::-webkit-scrollbar { height: 8px; }
+    .scroll-strip::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, rgba(99,215,255,0.8), rgba(255,136,206,0.8));
+      border-radius: 999px;
+    }
+
+    .roll-card {
+      position: relative;
+      min-height: 340px;
+      border-radius: 2rem;
+      scroll-snap-align: center;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+        linear-gradient(145deg, rgba(31,64,83,0.9), rgba(17,27,55,0.95));
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 0 26px rgba(0,0,0,0.24), inset 0 0 24px rgba(255,255,255,0.04);
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .mountain,
+    .hill,
+    .blossom-tree,
+    .grave,
+    .kite-mini,
+    .house {
+      position: absolute;
+    }
+
+    .mountain {
+      bottom: 25%;
+      width: 55%;
+      height: 38%;
+      background: linear-gradient(180deg, rgba(92,255,179,0.5), rgba(24,74,74,0.95));
+      clip-path: polygon(0 100%, 30% 35%, 45% 55%, 65% 10%, 100% 100%);
+      opacity: 0.9;
+      filter: drop-shadow(0 0 16px rgba(109,255,179,0.2));
+    }
+
+    .hill {
+      bottom: 0;
+      width: 120%;
+      height: 38%;
+      left: -10%;
+      background: linear-gradient(180deg, rgba(77,163,133,0.95), rgba(18,68,54,1));
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+
+    .blossom-tree {
+      bottom: 18%;
+      width: 26%;
+      height: 40%;
+    }
+
+    .blossom-tree::before {
+      content: "";
+      position: absolute;
+      left: 46%;
+      bottom: 0;
+      width: 12%;
+      height: 55%;
+      background: linear-gradient(180deg, #a47a58, #6e4b38);
+      border-radius: 999px;
+    }
+
+    .blossom-tree::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 70%;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,200,223,0.95), transparent 25%),
+        radial-gradient(circle at 60% 24%, rgba(255,170,210,0.95), transparent 24%),
+        radial-gradient(circle at 48% 50%, rgba(255,205,232,0.96), transparent 26%),
+        radial-gradient(circle at 70% 52%, rgba(255,160,196,0.85), transparent 24%),
+        radial-gradient(circle at 18% 56%, rgba(255,198,216,0.85), transparent 23%);
+      filter: drop-shadow(0 0 14px rgba(255,136,206,0.22));
+      animation: bloomPulse 5s ease-in-out infinite;
+    }
+
+    @keyframes bloomPulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.03) translateY(-4px); }
+    }
+
+    .grave {
+      bottom: 18%;
+      width: 20%;
+      height: 22%;
+      border-radius: 40% 40% 18% 18%;
+      background: linear-gradient(180deg, rgba(222,241,255,0.9), rgba(143,180,213,0.95));
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.35);
+    }
+
+    .grave::before {
+      content: "鲜花";
+      position: absolute;
+      left: 50%;
+      bottom: -16%;
+      transform: translateX(-50%);
+      font-size: 0.8rem;
+      color: #fff7d0;
+      text-shadow: 0 0 8px rgba(255,214,106,0.6);
+    }
+
+    .grave::after {
+      content: "✿ ✿ ✿";
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      bottom: -2%;
+      color: #ff9dcf;
+      font-size: 1rem;
+      letter-spacing: 0.2rem;
+    }
+
+    .house {
+      bottom: 23%;
+      width: 22%;
+      height: 20%;
+      background: linear-gradient(180deg, #ffd97a, #f19a46);
+      clip-path: polygon(10% 45%, 50% 0, 90% 45%, 90% 100%, 10% 100%);
+      box-shadow: 0 0 18px rgba(255,214,106,0.25);
+    }
+
+    .house::before {
+      content: "杏花村";
+      position: absolute;
+      left: 50%;
+      top: -22%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.9rem;
+      color: #fff6c5;
+      text-shadow: 0 0 8px rgba(255,214,106,0.55);
+    }
+
+    .kite-mini {
+      width: 16%;
+      height: 24%;
+      clip-path: polygon(50% 0%, 92% 42%, 50% 100%, 8% 42%);
+      background: linear-gradient(145deg, #73d8ff, #ff8bca);
+      border: 1px solid rgba(255,255,255,0.6);
+      animation: floatMini 4.8s ease-in-out infinite;
+    }
+
+    .kite-mini::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      width: 2px;
+      height: 90%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent);
+    }
+
+    @keyframes floatMini {
+      0%,100% { transform: translateY(0) rotate(-6deg); }
+      50% { transform: translateY(-10px) rotate(6deg); }
+    }
+
+    .npc {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 86px;
+      height: 120px;
+      z-index: 4;
+      cursor: pointer;
+      transform-origin: bottom center;
+      animation: npcBounce 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 16px rgba(255,214,106,0.3));
+    }
+
+    @keyframes npcBounce {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .npc .head,
+    .npc .body,
+    .npc .hat,
+    .npc .staff {
+      position: absolute;
+    }
+
+    .npc .head {
+      left: 28px;
+      top: 18px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff4e8, #ffd7c4 75%);
+      z-index: 2;
+    }
+
+    .npc .hat {
+      left: 18px;
+      top: 2px;
+      width: 52px;
+      height: 28px;
+      border-radius: 60% 60% 20% 20%;
+      background: linear-gradient(180deg, #ffe28f, #d9a74f);
+      transform: rotate(-4deg);
+    }
+
+    .npc .body {
+      left: 18px;
+      top: 44px;
+      width: 52px;
+      height: 56px;
+      border-radius: 46% 46% 28% 28%;
+      background: linear-gradient(180deg, #71f6b0, #57a6ff);
+      clip-path: polygon(50% 0%, 88% 10%, 100% 100%, 0 100%, 12% 10%);
+    }
+
+    .npc .staff {
+      left: 66px;
+      top: 38px;
+      width: 4px;
+      height: 70px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #9a7852, #6e5137);
+      transform: rotate(10deg);
+    }
+
+    .speech {
+      position: fixed;
+      right: 108px;
+      bottom: 96px;
+      max-width: 240px;
+      padding: 0.85rem 1rem;
+      border-radius: 1.25rem;
+      background: rgba(10,18,34,0.82);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 0 20px rgba(99,215,255,0.22);
+      color: #fbfdff;
+      z-index: 5;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(14px);
+      transition: 0.35s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .speech.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .parallax {
+      transform: translate3d(0, calc(var(--parallax, 0px)), 0);
+      transition: transform 0.12s linear;
+    }
+
+    .hero-divider {
+      height: 1px;
+      width: min(280px, 70vw);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+      box-shadow: 0 0 14px rgba(99,215,255,0.55);
+    }
+
+    .small-note {
+      color: rgba(242, 247, 255, 0.88);
+      text-shadow: 0 0 10px rgba(99,215,255,0.2);
+    }
+
+    .mist-band {
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      bottom: 12%;
+      height: 160px;
+      background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.18), transparent 40%), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.14), transparent 36%);
+      filter: blur(24px);
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .scroll-strip { grid-auto-columns: 82vw; }
+      .npc { transform: scale(0.9); transform-origin: bottom right; }
+      .speech { right: 80px; bottom: 90px; max-width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particleCanvas" aria-hidden="true"></canvas>
+
+  <div class="content-layer">
+    <header class="relative min-h-screen flex items-center justify-center overflow-hidden px-6">
+      <div class="hero-haze"></div>
+      <div class="mist-band"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/20"></div>
+
+      <div class="max-w-7xl w-full mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center py-20">
+        <section class="text-center lg:text-left space-y-6 parallax" data-speed="0.18">
+          <p class="fade-up inline-flex items-center gap-3 px-5 py-2 rounded-full border border-white/15 bg-white/5 backdrop-blur-md text-sm tracking-[0.35em] uppercase small-note">
+            <span class="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(109,255,179,0.9)]"></span>
+            Qingming · Anime Dreamscape
+          </p>
+
+          <div class="space-y-4">
+            <h1 class="fade-up delay-1 text-5xl sm:text-6xl xl:text-7xl font-black leading-tight glow-text tracking-[0.12em]">
+              清明时节，春雨与纸鸢
+            </h1>
+            <div class="hero-divider fade-up delay-2 mx-auto lg:mx-0"></div>
+            <p class="fade-up delay-2 text-lg sm:text-xl text-cyan-50/90 max-w-2xl leading-8 small-note">
+              以梦幻动漫光影重绘春山、细雨、杏花与思念，
+              <span class="text-pink-200">where remembrance meets neon spring.</span>
+            </p>
+          </div>
+
+          <div class="fade-up delay-3 space-y-3 rounded-[2rem] border border-white/15 bg-slate-900/20 backdrop-blur-xl p-6 shadow-[0_0_32px_rgba(99,215,255,0.14)] max-w-3xl mx-auto lg:mx-0">
+            <div class="text-2xl sm:text-3xl md:text-4xl leading-[1.9] text-white/95 glow-text">
+              <span class="poem-line">清明时节雨纷纷，</span><br />
+              <span class="poem-line">路上行人欲断魂。</span><br />
+              <span class="poem-line">借问酒家何处有？</span><br />
+              <span class="poem-line">牧童遥指杏花村。</span>
+            </div>
+            <p class="text-sm sm:text-base text-sky-100/80 tracking-[0.2em] uppercase">
+              A Poetic Memory in Mist, Blossoms, and Wind
+            </p>
+          </div>
+
+          <div class="fade-up delay-4 flex flex-wrap gap-4 justify-center lg:justify-start">
+            <a href="#rituals" class="px-7 py-3 rounded-full border border-cyan-200/35 bg-cyan-300/10 text-cyan-50 shadow-[0_0_18px_rgba(99,215,255,0.25)] hover:bg-cyan-300/20 transition">
+              探索春景 Explore
+            </a>
+            <a href="#scroll-gallery" class="px-7 py-3 rounded-full border border-pink-200/35 bg-pink-300/10 text-pink-50 shadow-[0_0_18px_rgba(255,136,206,0.2)] hover:bg-pink-300/20 transition">
+              卷轴画境 Scroll the Scroll
+            </a>
+          </div>
+        </section>
+
+        <section class="relative flex items-center justify-center parallax" data-speed="0.28">
+          <div id="heroKite" class="hero-kite fade-up delay-2" aria-label="动漫风纸鸢插画">
+            <div class="kite-core"></div>
+            <div class="kite-girl">
+              <div class="girl-hair"></div>
+              <div class="girl-head"></div>
+              <div class="girl-body"></div>
+              <div class="girl-sleeve"></div>
+              <div class="girl-sleeve right"></div>
+            </div>
+            <div class="kite-branch">
+              <div class="branch-stem"></div>
+              <div class="leaf"></div>
+              <div class="leaf"></div>
+              <div class="leaf"></div>
+              <div class="leaf"></div>
+            </div>
+            <div class="kite-tail">
+              <div class="tail-bow" style="top: 12%;"></div>
+              <div class="tail-bow" style="top: 35%; transform: translateX(-50%) scale(0.88);"></div>
+              <div class="tail-bow" style="top: 60%; transform: translateX(-50%) scale(0.74);"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </header>
+
+    <main>
+      <section id="rituals" class="relative px-6 py-24">
+        <div class="max-w-7xl mx-auto">
+          <div class="text-center mb-14 parallax" data-speed="0.08">
+            <p class="text-sm uppercase tracking-[0.45em] text-emerald-100/75 mb-4">Qingming Rituals</p>
+            <h2 class="text-4xl md:text-5xl font-black glow-text tracking-[0.15em]">春日仪式 · Floating Memories</h2>
+            <p class="mt-5 max-w-3xl mx-auto text-cyan-50/80 leading-8">
+              扫墓祭祖、放飞纸鸢、杏花春雨，以温柔动漫感重构清明记忆，
+              <span class="text-amber-200">soft, luminous, and full of life.</span>
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-7">
+            <article class="floating-card rounded-[2rem] p-7 group" data-card="tribute">
+              <div class="icon-orb mb-6">🌼</div>
+              <h3 class="text-2xl font-bold tracking-[0.12em] mb-3 text-white">扫墓祭祖<br><span class="text-base text-cyan-100/75 tracking-[0.28em]">Tribute & Remembrance</span></h3>
+              <p class="text-white/80 leading-8">
+                鲜花、微雨、春山与灯光相拥，让纪念不再沉重，而像一场温柔的重逢。
+                在可爱的动漫笔触里，memory glows quietly.
+              </p>
+            </article>
+
+            <article class="floating-card rounded-[2rem] p-7 group" data-card="kite">
+              <div class="icon-orb mb-6">🪁</div>
+              <h3 class="text-2xl font-bold tracking-[0.12em] mb-3 text-white">放飞纸鸢<br><span class="text-base text-pink-100/75 tracking-[0.28em]">Kites in the Wind</span></h3>
+              <p class="text-white/80 leading-8">
+                拖拽或点击天空中的纸鸢，让它飞向高处，留下彩色粒子尾迹，像把烦忧交给春风。
+                Lift wishes into the bright sky.
+              </p>
+            </article>
+
+            <article class="floating-card rounded-[2rem] p-7 group" data-card="rain">
+              <div class="icon-orb mb-6">🌸</div>
+              <h3 class="text-2xl font-bold tracking-[0.12em] mb-3 text-white">杏花春雨<br><span class="text-base text-amber-100/75 tracking-[0.28em]">Apricot Blossoms & Rain</span></h3>
+              <p class="text-white/80 leading-8">
+                细雨、柳絮、杏花瓣在画面中交错漂流，营造《你的名字》般梦幻霓虹的季节呼吸。
+                Neon spring drifts between each drop.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="scroll-gallery" class="relative px-6 pb-28">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-10 text-center parallax" data-speed="0.06">
+            <p class="text-sm uppercase tracking-[0.45em] text-pink-100/80 mb-4">Poetic Handscroll</p>
+            <h2 class="text-4xl md:text-5xl font-black glow-text tracking-[0.14em]">诗意画卷 · Scroll of Spring</h2>
+            <p class="mt-5 max-w-3xl mx-auto text-cyan-50/80 leading-8">
+              横向滑动画卷，穿过远山、村落、纸鸢与春祭，欣赏动漫手绘般的清明习俗插图。
+            </p>
+          </div>
+
+          <div class="scroll-strip" aria-label="清明画卷横向滚动区域">
+            <article class="roll-card">
+              <div class="scene">
+                <div class="mountain" style="left: 2%;"></div>
+                <div class="mountain" style="right: -8%; width: 62%; height: 34%; opacity: 0.72;"></div>
+                <div class="hill"></div>
+                <div class="grave" style="left: 20%;"></div>
+                <div class="grave" style="left: 46%; transform: scale(0.9);"></div>
+                <div class="blossom-tree" style="right: 10%;"></div>
+              </div>
+              <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-slate-950/90 to-transparent">
+                <h3 class="text-2xl font-bold mb-2">春山祭念 · Gentle Tribute</h3>
+                <p class="text-white/75 leading-7">在柔光与花束之间，把思念种进春天，也把爱轻轻留下。</p>
+              </div>
+            </article>
+
+            <article class="roll-card">
+              <div class="scene">
+                <div class="mountain" style="left: -4%; width: 68%; height: 44%;"></div>
+                <div class="hill"></div>
+                <div class="house" style="right: 18%;"></div>
+                <div class="blossom-tree" style="left: 10%; transform: scale(0.95);"></div>
+                <div class="blossom-tree" style="right: 2%; bottom: 12%; transform: scale(0.72);"></div>
+              </div>
+              <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-slate-950/90 to-transparent">
+                <h3 class="text-2xl font-bold mb-2">杏花村光 · Apricot Village Glow</h3>
+                <p class="text-white/75 leading-7">远处灯火像诗的韵脚，雨丝掠过村口，春意在山雾里悄悄发光。</p>
+              </div>
+            </article>
+
+            <article class="roll-card">
+              <div class="scene">
+                <div class="mountain" style="left: 14%; width: 58%; height: 32%;"></div>
+                <div class="hill"></div>
+                <div class="kite-mini" style="left: 12%; top: 18%;"></div>
+                <div class="kite-mini" style="left: 54%; top: 8%; transform: scale(0.8); animation-delay: -1s;"></div>
+                <div class="kite-mini" style="right: 12%; top: 24%; transform: scale(0.9); animation-delay: -2s;"></div>
+                <div class="blossom-tree" style="left: 58%; bottom: 15%; transform: scale(0.82);"></div>
+              </div>
+              <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-slate-950/90 to-transparent">
+                <h3 class="text-2xl font-bold mb-2">纸鸢追风 · Windborne Wishes</h3>
+                <p class="text-white/75 leading-7">把心事系在细线上，让天空替我们记住每一次温柔出发。</p>
+              </div>
+            </article>
+
+            <article class="roll-card">
+              <div class="scene">
+                <div class="mountain" style="left: -10%; width: 72%; height: 36%; opacity: 0.8;"></div>
+                <div class="hill"></div>
+                <div class="blossom-tree" style="left: 8%;"></div>
+                <div class="blossom-tree" style="right: 12%; transform: scale(0.88);"></div>
+                <div class="house" style="left: 40%; width: 18%; height: 18%;"></div>
+              </div>
+              <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-slate-950/90 to-transparent">
+                <h3 class="text-2xl font-bold mb-2">雨落花飞 · Rain & Blossoms</h3>
+                <p class="text-white/75 leading-7">每一瓣杏花都像春天写下的注脚，在雨丝中缓慢旋转、轻声落地。</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button id="npc" class="npc" aria-label="牧童彩蛋">
+    <span class="hat"></span>
+    <span class="head"></span>
+    <span class="body"></span>
+    <span class="staff"></span>
+  </button>
+  <div id="speech" class="speech">
+    <div class="text-lg glow-text mb-1">酒家何处有？</div>
+    <div class="text-sm text-white/75 tracking-[0.12em]">The shepherd boy points toward Apricot Blossom Village.</div>
+  </div>
+
+  <script>
+    // Tailwind runtime config kept minimal for CDN usage.
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: {
+            neon: '0 0 20px rgba(99,215,255,0.35), 0 0 35px rgba(255,136,206,0.25)'
+          }
+        }
+      }
+    };
+
+    // ------------------------------------------------------------
+    // Canvas particle world: rain, petals, willow fluff, kites,
+    // trail sparkles, fireworks, hover bursts.
+    // ------------------------------------------------------------
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = 0;
+    let height = 0;
+    let pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2, down: false, draggingKite: null };
+    let scrollY = 0;
+
+    const rain = [];
+    const petals = [];
+    const fluff = [];
+    const sparks = [];
+    const bursts = [];
+    const hoverBursts = [];
+    const kites = [];
+    const interactiveCards = [...document.querySelectorAll('.floating-card')];
+
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seedParticles();
+      if (!kites.length) spawnKites();
+    }
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+    function seedParticles() {
+      rain.length = 0;
+      petals.length = 0;
+      fluff.length = 0;
+      const rainCount = Math.min(180, Math.floor(width / 8));
+      const petalCount = Math.min(54, Math.floor(width / 26));
+      const fluffCount = Math.min(40, Math.floor(width / 38));
+
+      for (let i = 0; i < rainCount; i++) {
+        rain.push(makeRain(true));
+      }
+      for (let i = 0; i < petalCount; i++) {
+        petals.push(makePetal(true));
+      }
+      for (let i = 0; i < fluffCount; i++) {
+        fluff.push(makeFluff(true));
+      }
+    }
+
+    function spawnKites() {
+      const palette = [
+        ['#ff88ce', '#63d7ff'],
+        ['#6dffb3', '#ffd56a'],
+        ['#9cecff', '#ff9fc8']
+      ];
+      for (let i = 0; i < 3; i++) {
+        const colors = palette[i % palette.length];
+        kites.push({
+          x: width * (0.18 + i * 0.24),
+          y: height * (0.26 + (i % 2) * 0.08),
+          vx: rand(0.2, 0.48),
+          vy: rand(-0.05, 0.04),
+          size: rand(34, 48),
+          sway: rand(0, Math.PI * 2),
+          colors,
+          dragging: false,
+          id: 'kite-' + i
+        });
+      }
+    }
+
+    function makeRain(randomY = false) {
+      return {
+        x: rand(0, width),
+        y: randomY ? rand(-height, height) : -20,
+        len: rand(10, 20),
+        speed: rand(8, 14),
+        drift: rand(-1.4, -0.6),
+        alpha: rand(0.22, 0.6)
+      };
+    }
+
+    function makePetal(randomY = false, originX = rand(0, width), originY = -20) {
+      return {
+        x: originX,
+        y: randomY ? rand(-height, height) : originY,
+        size: rand(6, 12),
+        speedY: rand(0.45, 1.4),
+        speedX: rand(-0.8, 0.8),
+        rotation: rand(0, Math.PI * 2),
+        spin: rand(-0.03, 0.03),
+        alpha: rand(0.45, 0.95),
+        hue: pick(['#ffd5ea', '#ffb0d4', '#ffc9df', '#fff0f8'])
+      };
+    }
+
+    function makeFluff(randomY = false) {
+      return {
+        x: rand(0, width),
+        y: randomY ? rand(-height, height) : -20,
+        size: rand(8, 16),
+        speedY: rand(0.18, 0.55),
+        speedX: rand(0.4, 1.1),
+        alpha: rand(0.18, 0.35)
+      };
+    }
+
+    function createSpark(x, y, color, spread = 1) {
+      sparks.push({
+        x,
+        y,
+        vx: rand(-2.8, 2.8) * spread,
+        vy: rand(-2.8, 2.8) * spread,
+        life: rand(24, 52),
+        maxLife: 52,
+        color,
+        size: rand(1.4, 3.4)
+      });
+    }
+
+    function createBurst(x, y, colors) {
+      for (let i = 0; i < 70; i++) {
+        bursts.push({
+          x,
+          y,
+          vx: Math.cos((Math.PI * 2 * i) / 70) * rand(1.2, 3.9),
+          vy: Math.sin((Math.PI * 2 * i) / 70) * rand(1.2, 3.9),
+          life: rand(28, 54),
+          color: pick(colors),
+          size: rand(1.8, 4.2)
+        });
+      }
+    }
+
+    function createHoverBurst(x, y, palette) {
+      for (let i = 0; i < 18; i++) {
+        hoverBursts.push({
+          x: x + rand(-18, 18),
+          y: y + rand(-18, 18),
+          vx: rand(-1.5, 1.5),
+          vy: rand(-1.5, 1.5),
+          life: rand(16, 30),
+          size: rand(2, 4),
+          color: pick(palette)
+        });
+      }
+    }
+
+    function drawRainDrop(drop) {
+      ctx.strokeStyle = `rgba(172, 228, 255, ${drop.alpha})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x + drop.drift * 2.2, drop.y + drop.len);
+      ctx.stroke();
+    }
+
+    function drawPetal(petal) {
+      ctx.save();
+      ctx.translate(petal.x, petal.y);
+      ctx.rotate(petal.rotation);
+      ctx.globalAlpha = petal.alpha;
+      ctx.fillStyle = petal.hue;
+      ctx.beginPath();
+      ctx.moveTo(0, -petal.size * 0.7);
+      ctx.quadraticCurveTo(petal.size * 0.75, -petal.size * 0.25, petal.size * 0.4, petal.size * 0.85);
+      ctx.quadraticCurveTo(0, petal.size * 0.45, -petal.size * 0.4, petal.size * 0.85);
+      ctx.quadraticCurveTo(-petal.size * 0.75, -petal.size * 0.25, 0, -petal.size * 0.7);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawFluff(p) {
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+      g.addColorStop(0, `rgba(255,255,255,${p.alpha})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawSpark(s) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, s.life / s.maxLife);
+      ctx.fillStyle = s.color;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBurstParticle(b) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, b.life / 54);
+      ctx.fillStyle = b.color;
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawKite(kite) {
+      ctx.save();
+      ctx.translate(kite.x, kite.y + Math.sin(kite.sway) * 6);
+      ctx.rotate(Math.sin(kite.sway * 0.8) * 0.15);
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = kite.colors[0];
+
+      const grad = ctx.createLinearGradient(-kite.size / 2, -kite.size / 2, kite.size / 2, kite.size / 2);
+      grad.addColorStop(0, kite.colors[0]);
+      grad.addColorStop(1, kite.colors[1]);
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -kite.size);
+      ctx.lineTo(kite.size * 0.78, 0);
+      ctx.lineTo(0, kite.size);
+      ctx.lineTo(-kite.size * 0.78, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, -kite.size * 0.96);
+      ctx.lineTo(0, kite.size * 0.96);
+      ctx.moveTo(-kite.size * 0.72, 0);
+      ctx.lineTo(kite.size * 0.72, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.moveTo(0, kite.size);
+      ctx.lineTo(0, kite.size + 60);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function updateParticles() {
+      rain.forEach(drop => {
+        drop.x += drop.drift;
+        drop.y += drop.speed;
+        if (drop.y > height + 20 || drop.x < -20) Object.assign(drop, makeRain(false));
+      });
+
+      petals.forEach(petal => {
+        petal.x += petal.speedX + Math.sin((petal.y + petal.rotation) * 0.01) * 0.6;
+        petal.y += petal.speedY;
+        petal.rotation += petal.spin;
+        if (petal.y > height + 18 || petal.x < -30 || petal.x > width + 30) {
+          Object.assign(petal, makePetal(false, rand(0, width), -20));
+        }
+      });
+
+      fluff.forEach(f => {
+        f.x += f.speedX + Math.sin(f.y * 0.02) * 0.3;
+        f.y += f.speedY;
+        if (f.y > height + 20 || f.x > width + 30) Object.assign(f, makeFluff(false));
+      });
+
+      sparks.forEach((s, index) => {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vx *= 0.985;
+        s.vy *= 0.985;
+        s.life -= 1;
+        if (s.life <= 0) sparks.splice(index, 1);
+      });
+
+      bursts.forEach((b, index) => {
+        b.x += b.vx;
+        b.y += b.vy;
+        b.vx *= 0.988;
+        b.vy = b.vy * 0.988 + 0.01;
+        b.life -= 1;
+        if (b.life <= 0) bursts.splice(index, 1);
+      });
+
+      hoverBursts.forEach((b, index) => {
+        b.x += b.vx;
+        b.y += b.vy;
+        b.life -= 1;
+        if (b.life <= 0) hoverBursts.splice(index, 1);
+      });
+
+      kites.forEach(kite => {
+        if (!kite.dragging) {
+          kite.x += kite.vx;
+          kite.y += kite.vy + Math.sin(kite.sway) * 0.12;
+          kite.sway += 0.025;
+          if (kite.x > width + 80) {
+            kite.x = -80;
+            kite.y = rand(height * 0.12, height * 0.48);
+          }
+          if (kite.y < 60) kite.vy = 0.05;
+          if (kite.y > height * 0.55) kite.vy = -0.08;
+        } else {
+          kite.x += (pointer.x - kite.x) * 0.18;
+          kite.y += (pointer.y - kite.y) * 0.18;
+          kite.sway += 0.08;
+        }
+
+        for (let i = 0; i < 2; i++) {
+          createSpark(kite.x + rand(-5, 5), kite.y + kite.size + rand(10, 24), pick(kite.colors), 0.4);
+        }
+      });
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, width, height);
+
+      const skyGlow = ctx.createLinearGradient(0, 0, 0, height);
+      skyGlow.addColorStop(0, 'rgba(255,255,255,0.04)');
+      skyGlow.addColorStop(0.4, 'rgba(99,215,255,0.02)');
+      skyGlow.addColorStop(1, 'rgba(16,35,58,0.08)');
+      ctx.fillStyle = skyGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      rain.forEach(drawRainDrop);
+      fluff.forEach(drawFluff);
+      petals.forEach(drawPetal);
+      kites.forEach(drawKite);
+      sparks.forEach(drawSpark);
+      bursts.forEach(drawBurstParticle);
+      hoverBursts.forEach(drawBurstParticle);
+    }
+
+    function animate() {
+      updateParticles();
+      drawScene();
+      requestAnimationFrame(animate);
+    }
+
+    function getCanvasPoint(event) {
+      return { x: event.clientX, y: event.clientY };
+    }
+
+    function shouldIgnorePointerTarget(target) {
+      return Boolean(target.closest('a, button, article, .scroll-strip, .speech'));
+    }
+
+    function findKiteAt(x, y) {
+      return kites.find(kite => {
+        const dx = x - kite.x;
+        const dy = y - kite.y;
+        return Math.hypot(dx, dy) < kite.size * 1.05;
+      });
+    }
+
+    window.addEventListener('pointerdown', (event) => {
+      if (shouldIgnorePointerTarget(event.target)) return;
+      const point = getCanvasPoint(event);
+      pointer.down = true;
+      pointer.x = point.x;
+      pointer.y = point.y;
+      const kite = findKiteAt(point.x, point.y);
+      if (kite) {
+        kite.dragging = true;
+        pointer.draggingKite = kite;
+        createBurst(point.x, point.y, kite.colors);
+      } else {
+        const spawned = {
+          x: point.x,
+          y: point.y,
+          vx: rand(0.8, 1.2),
+          vy: rand(-0.3, 0.2),
+          size: rand(30, 42),
+          sway: rand(0, Math.PI * 2),
+          colors: pick([
+            ['#63d7ff', '#ff88ce'],
+            ['#6dffb3', '#ffd56a'],
+            ['#9cecff', '#ffa9d6']
+          ]),
+          dragging: false,
+          id: 'spawn-' + Date.now()
+        };
+        kites.push(spawned);
+        createBurst(point.x, point.y, spawned.colors);
+      }
+    });
+
+    window.addEventListener('pointermove', (event) => {
+      const point = getCanvasPoint(event);
+      pointer.x = point.x;
+      pointer.y = point.y;
+    });
+
+    window.addEventListener('pointerup', () => {
+      pointer.down = false;
+      if (pointer.draggingKite) {
+        pointer.draggingKite.dragging = false;
+        pointer.draggingKite.vx = rand(0.4, 1.1);
+        pointer.draggingKite.vy = rand(-0.2, 0.1);
+      }
+      pointer.draggingKite = null;
+    });
+
+    window.addEventListener('click', (event) => {
+      if (shouldIgnorePointerTarget(event.target)) return;
+      const point = getCanvasPoint(event);
+      const kite = findKiteAt(point.x, point.y);
+      if (kite) {
+        createBurst(point.x, point.y, [...kite.colors, '#ffffff', '#ffd56a']);
+      }
+    });
+
+    interactiveCards.forEach(card => {
+      card.addEventListener('mousemove', (event) => {
+        const rect = card.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        createHoverBurst(rect.left + x, rect.top + y, ['#63d7ff', '#ff88ce', '#ffd56a', '#6dffb3']);
+      });
+    });
+
+    const npc = document.getElementById('npc');
+    const speech = document.getElementById('speech');
+
+    npc.addEventListener('click', () => {
+      speech.classList.add('show');
+      const npcRect = npc.getBoundingClientRect();
+      for (let i = 0; i < 22; i++) {
+        petals.push(makePetal(false, npcRect.left + rand(-10, 30), npcRect.top + 20));
+      }
+      setTimeout(() => speech.classList.remove('show'), 2600);
+    });
+
+    const heroKite = document.getElementById('heroKite');
+    const heroHeader = document.querySelector('header');
+
+    heroHeader.addEventListener('pointermove', (event) => {
+      const rect = heroHeader.getBoundingClientRect();
+      const rx = (event.clientX - rect.left) / rect.width - 0.5;
+      const ry = (event.clientY - rect.top) / rect.height - 0.5;
+      heroKite.style.transform = `rotateX(${(-ry * 10).toFixed(2)}deg) rotateY(${(rx * 14).toFixed(2)}deg) translate3d(${(rx * 18).toFixed(1)}px, ${(ry * 16).toFixed(1)}px, 0)`;
+    });
+
+    heroHeader.addEventListener('pointerleave', () => {
+      heroKite.style.transform = 'rotateX(0deg) rotateY(0deg) translate3d(0,0,0)';
+    });
+
+    window.addEventListener('scroll', () => {
+      scrollY = window.scrollY;
+      document.querySelectorAll('.parallax').forEach(el => {
+        const speed = parseFloat(el.dataset.speed || '0.1');
+        el.style.setProperty('--parallax', `${scrollY * speed * -0.14}px`);
+      });
+    }, { passive: true });
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    animate();
+  </script>
+</body>
+</html>
