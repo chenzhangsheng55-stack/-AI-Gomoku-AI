@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>康建东 · 南京暑期实习互动作品集</title>
+  <style>
+    :root {
+      --green:#24d26a;
+      --blue:#1aa7ff;
+      --orange:#ff9f1a;
+      --bg:#071427;
+      --glass:rgba(255,255,255,.12);
+      --text:#eaf7ff;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:radial-gradient(circle at 20% 10%,#163a67 0,#071427 40%,#04101e 100%);scroll-behavior:smooth;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+    .noise::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:3px 3px;z-index:0}
+    #bgParticles{position:fixed;inset:0;z-index:-1}
+    .nav{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(1100px,94%);display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:var(--glass);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);border-radius:16px;z-index:999}
+    .logo{font-weight:800;letter-spacing:1px;background:linear-gradient(90deg,var(--green),var(--blue),var(--orange));-webkit-background-clip:text;color:transparent}
+    .menu{display:flex;gap:8px;flex-wrap:wrap}
+    .menu a{padding:8px 12px;border-radius:12px;position:relative;transition:.35s}
+    .menu a:hover{transform:translateY(-2px);background:rgba(255,255,255,.15);box-shadow:0 0 18px rgba(36,210,106,.45)}
+    .menu a::after{content:"";position:absolute;left:10px;right:10px;bottom:5px;height:2px;background:linear-gradient(90deg,var(--green),var(--blue));transform:scaleX(0);transform-origin:left;transition:.3s}
+    .menu a:hover::after{transform:scaleX(1)}
+    section{width:min(1100px,92%);margin:0 auto;padding:90px 0 30px;position:relative;z-index:1}
+    .hero{min-height:100vh;display:grid;place-items:center;padding-top:120px}
+    .hero-card{width:min(900px,100%);padding:50px 26px;border-radius:26px;background:linear-gradient(135deg,rgba(26,167,255,.22),rgba(36,210,106,.18),rgba(255,159,26,.18));border:1px solid rgba(255,255,255,.22);backdrop-filter: blur(4px);text-align:center;box-shadow:0 0 60px rgba(26,167,255,.25), inset 0 0 30px rgba(255,255,255,.08)}
+    h1{font-size:clamp(2rem,6vw,4rem);margin:.2em 0}
+    .subtitle{font-size:clamp(1rem,2.5vw,1.35rem);opacity:.95}
+    .charge-btn{margin-top:26px;border:none;padding:14px 30px;border-radius:999px;font-weight:700;font-size:1rem;color:#021221;cursor:pointer;background:linear-gradient(90deg,var(--green),var(--blue),var(--orange));box-shadow:0 8px 28px rgba(255,159,26,.45);transition:.3s}
+    .charge-btn:hover{transform:scale(1.06)}
+    .energy-wave{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle,#58ffe180 0%,transparent 60%);opacity:0;z-index:998}
+    .energy-wave.active{animation:wave 1s ease-out 1}
+    @keyframes wave{0%{transform:scale(.4);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+
+    .panel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:24px}
+    h2{font-size:clamp(1.4rem,3vw,2.1rem);margin:0 0 18px;background:linear-gradient(90deg,#fff,var(--green));-webkit-background-clip:text;color:transparent}
+    .about-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+    .gauge{display:grid;place-items:center}
+    .dial{width:220px;height:220px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--v)*1%),#1a2f47 0);display:grid;place-items:center;position:relative;cursor:pointer}
+    .dial::before{content:"";position:absolute;inset:18px;border-radius:50%;background:#081627}
+    .dial b{position:relative;font-size:2rem}
+    .dial span{position:relative;display:block;font-size:.9rem;opacity:.9}
+
+    .timeline{display:grid;gap:14px}
+    .edu-card{perspective:900px;height:160px}
+    .flip{position:relative;height:100%;transform-style:preserve-3d;transition:.7s}
+    .edu-card:hover .flip{transform:rotateY(180deg)}
+    .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;padding:20px;background:linear-gradient(135deg,rgba(36,210,106,.22),rgba(26,167,255,.2));border:1px solid rgba(255,255,255,.2)}
+    .back{transform:rotateY(180deg);background:linear-gradient(135deg,rgba(255,159,26,.22),rgba(26,167,255,.2))}
+
+    .skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+    .skill{padding:16px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);cursor:pointer}
+    .battery{height:16px;border:2px solid #d6f3ff;border-radius:6px;position:relative;margin-top:8px}
+    .battery::after{content:"";position:absolute;right:-7px;top:3px;width:5px;height:8px;background:#d6f3ff;border-radius:2px}
+    .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--orange),var(--green),var(--blue));transition:.6s}
+
+    .projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .p-card{padding:20px;border-radius:14px;background:linear-gradient(140deg,rgba(26,167,255,.22),rgba(255,159,26,.18));border:1px solid rgba(255,255,255,.2);cursor:pointer;transition:.3s}
+    .p-card:hover{transform:translateY(-6px)}
+
+    .nanjing{font-size:1.06rem;line-height:1.8;background:linear-gradient(90deg,rgba(36,210,106,.2),rgba(26,167,255,.16));}
+
+    .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    input,textarea{width:100%;margin-bottom:10px;padding:11px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff}
+    button.submit{width:100%;padding:12px;border:0;border-radius:10px;font-weight:700;background:linear-gradient(90deg,var(--green),var(--blue));color:#03121e;cursor:pointer}
+    footer{text-align:center;padding:38px 16px;color:#cce9ff}
+
+    .modal{position:fixed;inset:0;background:rgba(3,10,20,.7);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal.show{display:flex}
+    .modal-box{width:min(740px,92%);background:#08192d;border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:14px}
+    .close{float:right;background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer}
+    canvas.demo{width:100%;height:280px;background:linear-gradient(180deg,#0b2440,#061121);border-radius:12px;border:1px solid rgba(255,255,255,.15)}
+    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(.9);background:linear-gradient(90deg,var(--orange),var(--green));color:#042035;padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.35s;z-index:1200}
+    .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+
+    @media (max-width:820px){
+      .about-grid,.contact-grid{grid-template-columns:1fr}
+      .nav{top:8px;padding:8px 10px}
+      .menu a{padding:6px 9px;font-size:.9rem}
+    }
+  </style>
+</head>
+<body class="noise">
+  <canvas id="bgParticles"></canvas>
+  <div class="energy-wave" id="wave"></div>
+
+  <nav class="nav">
+    <div class="logo">康建东 · 能量简历</div>
+    <div class="menu">
+      <a href="#about">关于我</a><a href="#edu">教育背景</a><a href="#skills">技能专长</a><a href="#projects">创意项目</a><a href="#contact">联系我</a>
+    </div>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div class="hero-card">
+      <h1>大二车辆工程生 康建东</h1>
+      <div class="subtitle">南京暑期实习 · 创意互动开发者</div>
+      <button class="charge-btn" id="chargeNow">立即充电 探索我</button>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2>关于我</h2>
+    <div class="about-grid">
+      <div class="panel">
+        我是<strong>青岛理工大学车辆工程专业</strong>大二学生（2024级），擅长把工程思维与创意前端结合：一边研究车辆系统逻辑，一边用交互与动画把复杂信息“可视化、可感知、可玩”。<br><br>
+        目标是在<strong>南京寻找2026年暑期实习</strong>，希望为团队带来“技术 + 创意 + 交互体验”的满电输出。
+      </div>
+      <div class="panel gauge">
+        <div class="dial" id="dial" style="--v:72"><div><b id="energyVal">72%</b><span>我的能量值（点击充电）</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="edu">
+    <h2>教育背景</h2>
+    <div class="timeline">
+      <div class="edu-card"><div class="flip"><div class="face"><h3>2024 - 至今</h3><p>青岛理工大学 · 车辆工程 · 大二</p></div><div class="face back"><p>工程基础扎实，关注智能车辆、仿真分析与交互可视化表达。</p></div></div></div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <h2>技能专长（点击充电）</h2>
+    <div class="skills" id="skillsWrap"></div>
+  </section>
+
+  <section id="projects">
+    <h2>创意项目展示</h2>
+    <div class="projects">
+      <div class="p-card" data-demo="sim">车辆参数实时模拟器</div>
+      <div class="p-card" data-demo="resume">南孚风格互动简历生成器</div>
+      <div class="p-card" data-demo="traffic">南京城市交通创意可视化</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>南京实习宣言</h2>
+    <div class="panel nanjing">南京是一座兼具产业深度与创新活力的城市。2026年暑期，我希望把车辆工程的理性与创意开发的感性结合起来，为南京企业做出“看得见、摸得着、会互动”的数字化作品——我已准备好，为南京企业充电。</div>
+  </section>
+
+  <section id="contact">
+    <h2>联系我</h2>
+    <div class="contact-grid">
+      <div class="panel">
+        <p>📧 529196893@qq.com</p>
+        <p>📧 chenzhangsheng55@gmail.com</p>
+        <p>📱 15284684682</p>
+      </div>
+      <form class="panel" id="contactForm">
+        <input required placeholder="姓名" />
+        <input type="email" required placeholder="邮箱" />
+        <input required placeholder="实习意向（方向不限）" />
+        <textarea rows="4" placeholder="留言"></textarea>
+        <button class="submit" type="submit">提交投递</button>
+      </form>
+    </div>
+  </section>
+
+  <footer>Made with ❤️ & 100% 电量 by 康建东 · 南京暑期实习专用</footer>
+
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <button class="close" id="closeModal">✕</button>
+      <h3 id="demoTitle">互动 Demo</h3>
+      <canvas class="demo" id="demoCanvas" width="700" height="280"></canvas>
+    </div>
+  </div>
+  <div class="toast" id="toast">投递成功！能量已满，静候佳音</div>
+
+  <script>
+    const skills=["车辆系统建模","汽车结构理解","HTML/CSS","JavaScript","React","创意交互设计","Canvas动画"]; 
+    const wrap=document.getElementById('skillsWrap');
+    skills.forEach(s=>{const el=document.createElement('div');el.className='skill';el.innerHTML=`<strong>${s}</strong><div class="battery"><div class="fill"></div></div>`;el.onclick=()=>{const n=Math.min(100,Math.floor(Math.random()*40)+60);el.querySelector('.fill').style.width=n+'%';beep(180+n,0.08)};wrap.appendChild(el);});
+
+    const dial=document.getElementById('dial');const energyVal=document.getElementById('energyVal');let ev=72;
+    dial.addEventListener('click',()=>{ev=Math.min(100,ev+5);dial.style.setProperty('--v',ev);energyVal.textContent=ev+'%';beep(280,0.1)});
+
+    const wave=document.getElementById('wave');
+    document.getElementById('chargeNow').onclick=()=>{wave.classList.add('active');beep(420,0.15);setTimeout(()=>wave.classList.remove('active'),1000);document.getElementById('about').scrollIntoView({behavior:'smooth'});};
+
+    const modal=document.getElementById('modal'),canvas=document.getElementById('demoCanvas'),ctx=canvas.getContext('2d');let anim;
+    document.querySelectorAll('.p-card').forEach(c=>c.onclick=()=>openDemo(c.dataset.demo,c.textContent));
+    function openDemo(type,title){document.getElementById('demoTitle').textContent=title;modal.classList.add('show');cancelAnimationFrame(anim);if(type==='sim') sim(); if(type==='resume') resume(); if(type==='traffic') traffic();}
+    document.getElementById('closeModal').onclick=()=>{modal.classList.remove('show');cancelAnimationFrame(anim)};
+    modal.addEventListener('click',e=>{if(e.target===modal){modal.classList.remove('show');cancelAnimationFrame(anim)}});
+
+    function sim(){let t=0;(function loop(){t+=0.05;ctx.clearRect(0,0,700,280);ctx.strokeStyle='#3df';ctx.beginPath();for(let x=0;x<700;x++){const y=140+Math.sin(x/40+t)*45; x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.fillStyle='#8ff';ctx.fillText('车速波形模拟',20,24);anim=requestAnimationFrame(loop);})();}
+    function resume(){let p=0;(function loop(){p=(p+1)%101;ctx.clearRect(0,0,700,280);ctx.fillStyle='#fff';ctx.fillText('互动简历生成进度',20,24);ctx.strokeStyle='#fff';ctx.strokeRect(80,120,540,36);const g=ctx.createLinearGradient(0,0,540,0);g.addColorStop(0,'#ff9f1a');g.addColorStop(.5,'#24d26a');g.addColorStop(1,'#1aa7ff');ctx.fillStyle=g;ctx.fillRect(80,120,5.4*p,36);ctx.fillStyle='#fff';ctx.fillText(p+'%',330,145);anim=requestAnimationFrame(loop);})();}
+    function traffic(){let cars=[...Array(18)].map((_,i)=>({x:Math.random()*700,y:50+(i%6)*34,v:1+Math.random()*2}));(function loop(){ctx.clearRect(0,0,700,280);ctx.strokeStyle='rgba(255,255,255,.2)';for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(0,42+i*34);ctx.lineTo(700,42+i*34);ctx.stroke()}cars.forEach(c=>{c.x+=c.v;if(c.x>730)c.x=-20;ctx.fillStyle='#24d26a';ctx.fillRect(c.x,c.y,18,10)});ctx.fillStyle='#fff';ctx.fillText('南京交通流动可视化',20,22);anim=requestAnimationFrame(loop);})();}
+
+    document.getElementById('contactForm').onsubmit=(e)=>{e.preventDefault();const t=document.getElementById('toast');t.classList.add('show');beep(520,0.14);setTimeout(()=>t.classList.remove('show'),2200)};
+
+    function beep(freq=440,dur=0.08){const ac=new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.type='triangle';o.connect(g);g.connect(ac.destination);g.gain.value=.05;o.start();g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+dur);o.stop(ac.currentTime+dur);}
+
+    const b=document.getElementById('bgParticles'),bx=b.getContext('2d');let W,H,pts=[];
+    function rs(){W=b.width=innerWidth;H=b.height=innerHeight;pts=[...Array(Math.min(120,Math.floor(W/14)))].map(()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,r:Math.random()*2+1}))}
+    addEventListener('resize',rs);rs();
+    (function render(){bx.clearRect(0,0,W,H);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;bx.fillStyle='rgba(120,220,255,.65)';bx.beginPath();bx.arc(p.x,p.y,p.r,0,6.28);bx.fill();});requestAnimationFrame(render)})();
+  </script>
+</body>
+</html>
